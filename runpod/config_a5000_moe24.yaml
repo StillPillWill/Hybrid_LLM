@@ -1,0 +1,168 @@
+# V0 Looped Hybrid-MoE Config - RTX A5000 (24GB VRAM) RunPod Optimized
+version: "0.1"
+seed: 1337
+model:
+  vocab_size: 248320
+  d_model: 512
+  tie_word_embeddings: true
+  physical_blocks: 10
+  stem_blocks: 2
+  recurrent_blocks: 6
+  tail_blocks: 2
+  num_loops: 4
+  recurrent_layout:
+    - gdn_moe
+    - gdn_moe
+    - csa_moe
+    - gdn_moe
+    - gdn_moe
+    - gdn_moe
+  mhc:
+    enabled: true
+    streams: 4
+    sinkhorn_iterations: 20
+    init_gating_factor: 0.01
+    shared_across_loops: true
+    preserve_streams_across_loop_boundary: true
+  gdn:
+    qk_heads: 8
+    value_heads: 8
+    qk_head_dim: 64
+    value_head_dim: 64
+    conv_kernel: 4
+    sensitive_state_dtype: float32
+  moe:
+    routed_experts: 48
+    shared_experts: 4
+    routed_top_k: 20
+    expert_hidden: 320
+    activation: swiglu
+    normalize_topk_prob: true
+    aux_balance_coef: 0.005
+    token_dropping: false
+    expert_weights_shared_across_loops: true
+  mla:
+    latent_dim: 128
+  router:
+    context_aware: true
+    query_heads: 4
+    query_head_dim: 32
+    local_context: 128
+    use_hca_global_latents: false
+    scoring_dtype: float32
+  csa:
+    temporal_compression: 4
+    local_window: 128
+    index_heads: 8
+    index_head_dim: 64
+    index_top_k: 32
+  hca:
+    temporal_compression: 32
+    local_window: 128
+    dense_global_attention: true
+  dense_ffn:
+    hidden: 1792
+    activation: swiglu
+  loop_attnres:
+    implemented_hook: true
+    enabled: true
+    latent_dim: 128
+    heads: 4
+    head_dim: 32
+    residual_gate_init: 0.05
+  adaptive_loops:
+    enabled: true
+    learned_halting: true
+    min_loops: 1
+    max_loops: 4
+    backprop_loops: 2
+    halt_penalty: 0.004
+    halt_threshold: 0.5
+    halt_temperature: 1.0
+    initial_continue_prob: 0.6
+
+training:
+  tokens: 1000000000
+  context_length: 1024
+  batch_size: 7
+  gradient_accumulation_steps: 1
+  global_tokens_per_step: 7168
+  checkpoint_every: 0
+  report_every: 5
+  diagnostic_every: 100
+  final_loop_lm_loss_only: true
+  adaptive_compute: false
+  mixed_precision: bfloat16          # Native Ampere BF16 Tensor Cores
+
+data:
+  primary:
+    dir: data/streamed_fineweb
+    dataset_name: HuggingFaceFW/fineweb-edu
+    dataset_config: CC-MAIN-2024-10
+  interleave:
+    token_count: 75000000
+    batch_size: 7
+    seed: 1337
+    sources:
+      - name: wikipedia
+        weight: 1
+        dir: data/streamed_wikipedia
+        dataset_name: wikimedia/wikipedia
+        dataset_config: 20231101.en
+      - name: stack_edu
+        weight: 1.25
+        dir: data/streamed_stack_edu
+        dataset_name: HuggingFaceTB/stack-edu
+        dataset_config: Python
+        rows_per_shard: 128
+      - name: finepdfs_edu
+        weight: 1
+        dir: data/streamed_finepdfs_edu
+        dataset_name: HuggingFaceFW/finepdfs-edu
+        dataset_config: eng_Latn
+      - name: finemath
+        weight: 1
+        dir: data/streamed_finemath_4plus
+        dataset_name: HuggingFaceTB/finemath
+        dataset_config: finemath-4plus
+      - name: fineweb_edu
+        weight: 1
+        dir: data/streamed_fineweb
+        dataset_name: HuggingFaceFW/fineweb-edu
+        dataset_config: CC-MAIN-2024-10
+
+optimizer:
+  matrix_optimizer: muon      # Muon for matrices, AdamW for irregular tensors
+  mud_lr: 2.5e-5
+  mud_beta: 0.95
+  mud_passes: 1
+  muon_lr: 0.01
+  muon_beta: 0.95
+  muon_ns_steps: 5
+  adamw_lr: 2.5e-5
+  adamw_betas: [0.9, 0.95]
+  weight_decay: 0.01
+  grad_clip: 1.0
+
+schedule:
+  warmup_tokens: 20000000
+  horizon_tokens: 70000000
+  warmup_token_fraction: 0.02
+  decay: cosine
+  min_lr_ratio: 0.1
+  adaptive_loss_lr: true
+  plateau_patience_reports: 12
+  plateau_drop: 0.85
+  adaptive_min_scale: 0.5
+  plateau_min_delta: 0.03
+
+wandb:
+  project: hybrid-2b-looped-v0
+  entity: stillpillwill-n-a
+  run_name: v1-finemath4plus-truncated-bptt-early-exit-3090
+  source_loss_chart_every: 100
+  source_loss_chart_points: 1000
+  online_required: true
+  watch: false
+  heartbeat_seconds: 5
+  tags: [v0, scaled-306m, looped-hybrid-moe, qwen, ampere-a5000, triton]

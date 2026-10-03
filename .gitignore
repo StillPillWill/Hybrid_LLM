@@ -1,0 +1,91 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.venv*/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Run output and remote backups
+runs/
+logs/
+wandb/
+wandb_cache/
+wandb_data/
+wandb_runtime/
+runpod_backups/
+runpod_archive/
+
+# Datasets, caches, and model weights
+/data/streamed_*/
+/data/hf_cache/
+/data/probes/
+/data/*.txt
+.hf_cache/
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+*.llmy
+*.npy
+*.npz
+*.arrow
+*.parquet
+*.tar.gz
+
+# Native builds
+**/build/
+**/build-*/
+**/.native_*_build/
+*.obj
+*.o
+*.lib
+*.exp
+*.ninja_deps
+*.ninja_log
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Local configuration and credentials
+.env
+.env.*
+wandb_api.txt
+*.pem
+*.key
+*.secret
+*credentials*
+*secrets*
+
+# Logs and editor files
+*.log
+*.err.log
+Thumbs.db
+*.user
+*.suo
+*.swp
+
+# Vendored worktree
+third_party/transformers/
+
+# Local profiling and temporary snapshots
+_archive_compare_*/
+_qa_*/
+_sampler_runtime_backup_*/
+stage_*/
+tmp_*/
+tmpza*/
+.deploy_*/
+.mla_fix_*/
+.rollback_*/
+.runpod_pending/
+runtime_tmp*/
+/decode_profile_*/
+/decode_step_profile_*/
+/inspect_*/
+/recurrent_depth_calibration_*/
+/recurrent_depth_sweep_*/
+/recurrent_surprisal_sweep_*/
